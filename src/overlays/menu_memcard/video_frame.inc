@@ -5,7 +5,12 @@
  * track to the existing SDK decoder independently of video-frame assembly. */
 static PeDisc *movieAudioImage;
 static PeDiscFile movieAudioFile;
+/* Sectors of the movie file the audio has read so far: it reads them at the
+ * drive's pace, and the video reader keeps up with it (below). */
+static volatile u32 movieAudioPosition;
 static int MenuCard_ReadMovieAudio(struct PsyzCdRead *read) {
+    if(read && movieAudioImage && read->sector>=movieAudioFile.sector)
+        movieAudioPosition=read->sector-movieAudioFile.sector+1;
     if(!movieAudioImage || movieAudioImage!=g_CdImage || !movieAudioImage->stream || !read || !read->buffer || read->size!=2352 ||
        read->sector<movieAudioFile.sector ||
        read->sector-movieAudioFile.sector>=((u64)movieAudioFile.size+2047)/2048)
@@ -40,7 +45,7 @@ static int MenuCard_StartMovieAudio(PeDisc *image,const PeDiscFile *file) {
     filter[0]=raw[16];filter[1]=raw[17];
     if(Psyz_AudioInit()<0)return 0;
     Psyz_AudioLock();
-    movieAudioImage=image;movieAudioFile=*file;
+    movieAudioImage=image;movieAudioFile=*file;movieAudioPosition=0;
     Psyz_CdSetReadCB(MenuCard_ReadMovieAudio);
     Psyz_AudioUnlock();
     CdIntToPos(file->sector,&position);
@@ -66,13 +71,25 @@ void *MENUCARD_UPDATE_VIDEO_FRAME_NAME(VideoDisplay *display) {
     u32 part = 0;
     s32 end, remaining;
     VideoRect clear;
+    int skipping = 0;
     if (!g_CdImage || !display || !MENUCARD_VIDEO_ENTRY || !MENUCARD_VIDEO_STREAM_BUFFER) return 0;
     data = MENUCARD_VIDEO_STREAM_BUFFER + sizeof(VideoFrame);
+    /* The PS1 drive streams at a fixed pace and the MDEC keeps up. When
+     * decoding falls behind the audio here (a slow CPU), skip to the frame
+     * the audio has reached: picture and sound stay together, and both
+     * readers stay in one stretch of the disc instead of making a real
+     * drive seek between them for every sector. */
+    if (movieAudioImage == g_CdImage && movieAudioFile.sector == MENUCARD_VIDEO_FILE.sector &&
+        movieAudioPosition > MENUCARD_VIDEO_SECTOR + 10) {
+        MENUCARD_VIDEO_SECTOR = movieAudioPosition;
+        skipping = 1;
+    }
     while (MENUCARD_VIDEO_SECTOR < ((u64)MENUCARD_VIDEO_FILE.size + 2047) / 2048) {
         if (!pe_disc_read_raw(g_CdImage, &MENUCARD_VIDEO_FILE, MENUCARD_VIDEO_SECTOR++, raw)) return 0;
         memcpy(&header, raw + 24, sizeof(header));
         if (header.id != 0x160 || header.type != 0x8001) continue; /* Interleaved XA. */
         if (!part) {
+            if (header.secCount && skipping) continue; /* the middle of a skipped frame */
             if (header.secCount) return 0;
             if (header.frameCount > 32767 || !header.nSectors || header.nSectors > (0x20000 - sizeof(*frame)) / 2016 ||
                 header.frameSize < 12 || header.frameSize > (u32)header.nSectors * 2016 ||
@@ -100,6 +117,10 @@ void *MENUCARD_UPDATE_VIDEO_FRAME_NAME(VideoDisplay *display) {
             remaining = 0;
         }
         Spu_SetVoiceVolume(g_GameState.scene_audio.tracks.movie_volume * remaining / 14);
+    }
+    if (skipping && frame->frameCount > MENUCARD_VIDEO_LAST_TIME + 1) {
+        /* skipped frames still count for the movie's timed events */
+        g_SeqElapsed += frame->frameCount - MENUCARD_VIDEO_LAST_TIME - 1;
     }
     if (frame->frameCount < MENUCARD_VIDEO_LAST_TIME || frame->frameCount >= MENUCARD_VIDEO_ENTRY->end) {
         MENUCARD_VIDEO_FINISHED = 1;

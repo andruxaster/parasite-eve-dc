@@ -320,7 +320,11 @@ static uint32_t le32(const unsigned char *p) {
            (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
 }
 
-#define PE_DISC_CACHE_BYTES (64 * 1024)
+/* 128 KB, refilled from 32 KB before the request: a movie's video and
+ * audio read the same stretch of the disc a few sectors apart, and on a real
+ * drive every refill that goes back is a seek. */
+#define PE_DISC_CACHE_BYTES (128 * 1024)
+#define PE_DISC_CACHE_BEHIND (32 * 1024)
 #define PE_DISC_READ_TRIES 8
 
 static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
@@ -352,6 +356,7 @@ static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
                 /* Refill from the 2048-byte boundary below the request: whole
                  * aligned blocks are what CD filesystems read fastest. */
                 uint64_t start = offset & ~(uint64_t)2047;
+                start = start > PE_DISC_CACHE_BEHIND ? start - PE_DISC_CACHE_BEHIND : 0;
                 uint64_t length = disc->image_size - start;
                 if (length > PE_DISC_CACHE_BYTES)
                     length = PE_DISC_CACHE_BYTES;
