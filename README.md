@@ -97,7 +97,6 @@ Needs a KallistiOS toolchain (`sh-elf` GCC, newlib) and a built KOS tree
 ```sh
 git clone https://github.com/andruxaster/parasite-eve-dc
 cd parasite-eve-dc
-git checkout dc-small-memory
 git submodule update --init third_party/psyz
 git -C third_party/psyz submodule update --init external/SDL
 
