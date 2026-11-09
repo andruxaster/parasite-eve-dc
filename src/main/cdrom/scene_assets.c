@@ -321,6 +321,7 @@ static uint32_t le32(const unsigned char *p) {
 }
 
 #define PE_DISC_CACHE_BYTES (64 * 1024)
+#define PE_DISC_READ_TRIES 8
 
 static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
     if (!disc->stream)
@@ -334,31 +335,41 @@ static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
 #else
     flockfile(disc->stream);
 #endif
-    int read_ok;
-    if (size <= PE_DISC_CACHE_BYTES / 2 &&
-        (disc->cache || (disc->cache = malloc(PE_DISC_CACHE_BYTES)))) {
-        if (offset < disc->cache_offset ||
-            offset + size > disc->cache_offset + disc->cache_length) {
-            /* Refill from the 2048-byte boundary below the request: whole
-             * aligned blocks are what CD filesystems read fastest. */
-            uint64_t start = offset & ~(uint64_t)2047;
-            uint64_t length = disc->image_size - start;
-            if (length > PE_DISC_CACHE_BYTES)
-                length = PE_DISC_CACHE_BYTES;
+    /* A real drive can fail a read now and then (a burnt disc, a seek while
+     * another read is streaming): retry before calling the image broken. */
+    int read_ok = 0;
+    for (int attempt = 0; attempt < PE_DISC_READ_TRIES && !read_ok; attempt++) {
+        if (attempt) {
+            clearerr(disc->stream);
             disc->cache_length = 0;
-            if (pe_seek(disc->stream, (int64_t)start, SEEK_SET) == 0 &&
-                fread(disc->cache, 1, (size_t)length, disc->stream) == length) {
-                disc->cache_offset = start;
-                disc->cache_length = (uint32_t)length;
-            }
+            fprintf(stderr, "disc read retry %d at %llu\n", attempt,
+                    (unsigned long long)offset);
         }
-        read_ok = disc->cache_length && offset >= disc->cache_offset &&
-                  offset + size <= disc->cache_offset + disc->cache_length;
-        if (read_ok)
-            memcpy(data, disc->cache + (offset - disc->cache_offset), size);
-    } else {
-        read_ok=pe_seek(disc->stream,(int64_t)offset,SEEK_SET)==0 &&
-                fread(data,1,size,disc->stream)==size;
+        if (size <= PE_DISC_CACHE_BYTES / 2 &&
+            (disc->cache || (disc->cache = malloc(PE_DISC_CACHE_BYTES)))) {
+            if (offset < disc->cache_offset ||
+                offset + size > disc->cache_offset + disc->cache_length) {
+                /* Refill from the 2048-byte boundary below the request: whole
+                 * aligned blocks are what CD filesystems read fastest. */
+                uint64_t start = offset & ~(uint64_t)2047;
+                uint64_t length = disc->image_size - start;
+                if (length > PE_DISC_CACHE_BYTES)
+                    length = PE_DISC_CACHE_BYTES;
+                disc->cache_length = 0;
+                if (pe_seek(disc->stream, (int64_t)start, SEEK_SET) == 0 &&
+                    fread(disc->cache, 1, (size_t)length, disc->stream) == length) {
+                    disc->cache_offset = start;
+                    disc->cache_length = (uint32_t)length;
+                }
+            }
+            read_ok = disc->cache_length && offset >= disc->cache_offset &&
+                      offset + size <= disc->cache_offset + disc->cache_length;
+            if (read_ok)
+                memcpy(data, disc->cache + (offset - disc->cache_offset), size);
+        } else {
+            read_ok=pe_seek(disc->stream,(int64_t)offset,SEEK_SET)==0 &&
+                    fread(data,1,size,disc->stream)==size;
+        }
     }
 #ifdef _WIN32
     _unlock_file(disc->stream);
