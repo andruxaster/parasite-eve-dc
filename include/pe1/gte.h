@@ -28,6 +28,9 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
                        const void *s2, unsigned int xy2, const void *s3, unsigned int xy3,
                        int int_area);
 
+/* Constant registers and commands go inline (PsyZ's own header). */
+#include "../../third_party/psyz/psyz/include/psyz/gte_state.h"
+
 /*
  * PSY-Q-style GTE operations.  Keep these macros limited to COP2 state and
  * commands; the calling function owns all normal CPU-side algorithmic work.
@@ -166,11 +169,11 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 #define gte_ldrtir12_matrix_column(column) do { gte_ldclmv(column); gte_rtir(); } while (0)
 
 /* Store IR1..3 back to a strided matrix column. */
-#define gte_stir123_column(out) do { u8 *pe_gte_dst = (u8 *)(out); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } } while (0)
+#define gte_stir123_column(out) do { u8 *pe_gte_dst = (u8 *)(out); { const unsigned pe_gte_i = 0u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } { const unsigned pe_gte_i = 1u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } { const unsigned pe_gte_i = 2u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } } while (0)
 
 /* PSY-Q gte_stsv: store IR1..3 as a short vector (mfc2 into $12..$14, then
  * three halfword stores inside the same statement, as the SDK macro does). */
-#define gte_stsv(out) do { u8 *pe_gte_dst = (u8 *)(out); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 2, &pe_gte_half, 2); } } while (0)
+#define gte_stsv(out) do { u8 *pe_gte_dst = (u8 *)(out); { const unsigned pe_gte_i = 0u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 2, &pe_gte_half, 2); } { const unsigned pe_gte_i = 1u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 2, &pe_gte_half, 2); } { const unsigned pe_gte_i = 2u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 2, &pe_gte_half, 2); } } while (0)
 
 #define gte_stir123_column_at(column) \
     { \
@@ -181,10 +184,10 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 #define gte_rtv0tr_sf0() Psyz_GteCommand(0x4A480012u & 0x01ffffffu)
 
 /* Load the five packed words which hold R11..R33. */
-#define gte_ldrotmatrix(matrix) do { const u8 *pe_gte_src = (const u8 *)(matrix); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 5; ++pe_gte_i) { u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(0 + pe_gte_i, pe_gte_word); } } while (0)
+#define gte_ldrotmatrix(matrix) do { const u8 *pe_gte_src = (const u8 *)(matrix); { const unsigned pe_gte_i = 0u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(0 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(0 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(0 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 3u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(0 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 4u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(0 + pe_gte_i, pe_gte_word); } } while (0)
 
 /* Load the three translation-vector words into TRX, TRY, and TRZ. */
-#define gte_ldtransmatrix(matrix) do { const u8 *pe_gte_src = (const u8 *)(matrix); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 20 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(5 + pe_gte_i, pe_gte_word); } } while (0)
+#define gte_ldtransmatrix(matrix) do { const u8 *pe_gte_src = (const u8 *)(matrix); { const unsigned pe_gte_i = 0u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 20 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(5 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 20 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(5 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 20 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(5 + pe_gte_i, pe_gte_word); } } while (0)
 
 /* Preserve and replace the first column of the rotation matrix. */
 #define gte_getrotcol0(x, y, z) do { (x) = Psyz_GteCtrlRead(0); (y) = Psyz_GteCtrlRead(2); (z) = Psyz_GteCtrlRead(4); } while (0)
@@ -208,10 +211,10 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 /* MVMVA: light matrix, IR vector, no translation, SF=1, LM=1. */
 #define gte_lightcolor() do { Psyz_GteCommand(0x4A4DA412u & 0x01ffffffu); } while (0)
 
-#define gte_stmac(out) do { u8 *pe_gte_dst = (u8 *)(out); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
+#define gte_stmac(out) do { u8 *pe_gte_dst = (u8 *)(out); { const unsigned pe_gte_i = 0u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
 
 /* MAC stores followed by a pointer return leave v0 available to the caller. */
-#define gte_stmac_return(out) do { u8 *pe_gte_dst = (u8 *)(out); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
+#define gte_stmac_return(out) do { u8 *pe_gte_dst = (u8 *)(out); { const unsigned pe_gte_i = 0u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
 
 /* LZCS/LZCR: count leading zeroes in a 32-bit value. */
 #define gte_ldlzcs(value) Psyz_GteDataWrite(30, (u32)(value))
@@ -268,7 +271,7 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 #define gte_ldopv(vec) do { { u32 pe_gte_word; memcpy(&pe_gte_word, (const u8 *)(vec) + 8, 4); Psyz_GteDataWrite(11, pe_gte_word); } { u32 pe_gte_word; memcpy(&pe_gte_word, (const u8 *)(vec) + 0, 4); Psyz_GteDataWrite(9, pe_gte_word); } { u32 pe_gte_word; memcpy(&pe_gte_word, (const u8 *)(vec) + 4, 4); Psyz_GteDataWrite(10, pe_gte_word); } } while (0)
 
 /* OP uses R11, R22, and R33 as its temporary diagonal matrix entries. */
-#define gte_ldopv1(vec) do { const u8 *pe_gte_src = (const u8 *)(vec); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } } while (0)
+#define gte_ldopv1(vec) do { const u8 *pe_gte_src = (const u8 *)(vec); { const unsigned pe_gte_i = 0u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } } while (0)
 
 /* RGB is the colour input used by the colour interpolation commands. */
 #define gte_ldrgb(rgb) do { u32 word; memcpy(&word, (const u8 *)(rgb) + 0, 4); Psyz_GteDataWrite(6, word); } while (0)
@@ -509,11 +512,11 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 
 /* PSY-Q gte_ldclmv / gte_rtir / gte_stclmv: one strided matrix column through
  * RTIR (sf=1), the three steps of the SDK's inline gte_MulMatrix0. */
-#define gte_ldclmv(column) do { const u8 *pe_gte_src = (const u8 *)(column); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u16 pe_gte_half; memcpy(&pe_gte_half, pe_gte_src + pe_gte_i * 6, 2); Psyz_GteDataWrite(9 + pe_gte_i, pe_gte_half); } } while (0)
+#define gte_ldclmv(column) do { const u8 *pe_gte_src = (const u8 *)(column); { const unsigned pe_gte_i = 0u; u16 pe_gte_half; memcpy(&pe_gte_half, pe_gte_src + pe_gte_i * 6, 2); Psyz_GteDataWrite(9 + pe_gte_i, pe_gte_half); } { const unsigned pe_gte_i = 1u; u16 pe_gte_half; memcpy(&pe_gte_half, pe_gte_src + pe_gte_i * 6, 2); Psyz_GteDataWrite(9 + pe_gte_i, pe_gte_half); } { const unsigned pe_gte_i = 2u; u16 pe_gte_half; memcpy(&pe_gte_half, pe_gte_src + pe_gte_i * 6, 2); Psyz_GteDataWrite(9 + pe_gte_i, pe_gte_half); } } while (0)
 
 #define gte_rtir() Psyz_GteCommand(0x4A49E012u & 0x01ffffffu)
 
-#define gte_stclmv(column) do { u8 *pe_gte_dst = (u8 *)(column); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } } while (0)
+#define gte_stclmv(column) do { u8 *pe_gte_dst = (u8 *)(column); { const unsigned pe_gte_i = 0u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } { const unsigned pe_gte_i = 1u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } { const unsigned pe_gte_i = 2u; u16 pe_gte_half = (u16)Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 6, &pe_gte_half, 2); } } while (0)
 
 /* PSY-Q gte_ldlv0 / gte_rt / gte_stlvl: a long vector through RT with
  * translation (sf=1), as used by the SDK's inline gte_CompMatrix. */
@@ -522,7 +525,7 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 #define gte_rt() Psyz_GteCommand(0x4A480012u & 0x01ffffffu)
 
 /* PSY-Q inline_c.h gte_stlvl: store IR1..3 as a long vector. */
-#define gte_stlvl(vector) do { u8 *pe_gte_dst = (u8 *)(vector); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word = Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
+#define gte_stlvl(vector) do { u8 *pe_gte_dst = (u8 *)(vector); { const unsigned pe_gte_i = 0u; u32 pe_gte_word = Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word = Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word = Psyz_GteDataRead(9 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
 
 /* PSY-Q inline_c.h gte_MulMatrix0 / gte_CompMatrix (r3 = r1 * r2, with
  * the composed translation for CompMatrix). */
@@ -567,7 +570,7 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
  * which matched code depends on. */
 
 /* PSY-Q gte_ldopv1: R11, R22, R33 from a long vector through $12..$14. */
-#define gte_ldopv1_psyq(r0) do { const u8 *pe_gte_src = (const u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } } while (0)
+#define gte_ldopv1_psyq(r0) do { const u8 *pe_gte_src = (const u8 *)(r0); { const unsigned pe_gte_i = 0u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(pe_gte_i * 2, pe_gte_word); } } while (0)
 
 /* PSY-Q gte_SetGeomOffset: OFX/OFY from two integers shifted to 16.16. */
 #define gte_SetGeomOffset(r0, r1) do { Psyz_GteCtrlWrite(24, (u32)(r0) << 16); Psyz_GteCtrlWrite(25, (u32)(r1) << 16); } while (0)
@@ -582,7 +585,7 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 #define gte_SetBackColor(r0, r1, r2) do { Psyz_GteCtrlWrite(13, (u32)(r0) << 4); Psyz_GteCtrlWrite(14, (u32)(r1) << 4); Psyz_GteCtrlWrite(15, (u32)(r2) << 4); } while (0)
 
 /* PSY-Q gte_SetLightMatrix: the five packed words of L11..L33. */
-#define gte_SetLightMatrix(r0) do { const u8 *pe_gte_src = (const u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 5; ++pe_gte_i) { u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(8 + pe_gte_i, pe_gte_word); } } while (0)
+#define gte_SetLightMatrix(r0) do { const u8 *pe_gte_src = (const u8 *)(r0); { const unsigned pe_gte_i = 0u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(8 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(8 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(8 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 3u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(8 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 4u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(8 + pe_gte_i, pe_gte_word); } } while (0)
 
 /* PSY-Q gte_ncct: two hazard nops, then NCCT. */
 #define gte_ncct() Psyz_GteCommand(0x4B18043Fu & 0x01ffffffu)
@@ -591,20 +594,20 @@ int Psyz_GtePgxpNclip4(const void *s0, unsigned int xy0, const void *s1, unsigne
 #define gte_strgb3(r0, r1, r2) do { { u32 pe_gte_word = Psyz_GteDataRead(20); memcpy((u8 *)(r0) + 0, &pe_gte_word, 4); } { u32 pe_gte_word = Psyz_GteDataRead(21); memcpy((u8 *)(r1) + 0, &pe_gte_word, 4); } { u32 pe_gte_word = Psyz_GteDataRead(22); memcpy((u8 *)(r2) + 0, &pe_gte_word, 4); } } while (0)
 
 /* PSY-Q gte_stlvnl: store MAC1..3 as a long vector. */
-#define gte_stlvnl(r0) do { u8 *pe_gte_dst = (u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
+#define gte_stlvnl(r0) do { u8 *pe_gte_dst = (u8 *)(r0); { const unsigned pe_gte_i = 0u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word = Psyz_GteDataRead(25 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
 
 /* Store the whole GTE matrix: R11..R33 as five packed words (PSY-Q
  * gte_ReadRotMatrix) followed by TRX, TRY, TRZ at +20. */
-#define gte_ReadMatrix(r0) do { u8 *pe_gte_dst = (u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 8; ++pe_gte_i) { u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
+#define gte_ReadMatrix(r0) do { u8 *pe_gte_dst = (u8 *)(r0); { const unsigned pe_gte_i = 0u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 3u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 4u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 5u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 6u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 7u; u32 pe_gte_word = Psyz_GteCtrlRead(pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
 
 /* PSY-Q gte_ldv3c: V0..V2 from three consecutive short vectors. */
 #define gte_ldv3c(r0) do { const u8 *pe_gte_vectors = (const u8 *)(r0); gte_ldv0(pe_gte_vectors); gte_ldv1(pe_gte_vectors + 8); gte_ldv2(pe_gte_vectors + 16); } while (0)
 
 /* PSY-Q gte_stsxy3c / gte_stsz3c: SXY0..2 and SZ1..3 to consecutive words. */
-#define gte_stsxy3c(r0) do { u8 *pe_gte_dst = (u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { Psyz_GteStoreSxyTo(12 + pe_gte_i, pe_gte_dst + pe_gte_i * 4); } } while (0)
-#define gte_stsz3c(r0) do { u8 *pe_gte_dst = (u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 3; ++pe_gte_i) { u32 pe_gte_word = Psyz_GteDataRead(17 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
+#define gte_stsxy3c(r0) do { u8 *pe_gte_dst = (u8 *)(r0); { const unsigned pe_gte_i = 0u; Psyz_GteStoreSxyTo(12 + pe_gte_i, pe_gte_dst + pe_gte_i * 4); } { const unsigned pe_gte_i = 1u; Psyz_GteStoreSxyTo(12 + pe_gte_i, pe_gte_dst + pe_gte_i * 4); } { const unsigned pe_gte_i = 2u; Psyz_GteStoreSxyTo(12 + pe_gte_i, pe_gte_dst + pe_gte_i * 4); } } while (0)
+#define gte_stsz3c(r0) do { u8 *pe_gte_dst = (u8 *)(r0); { const unsigned pe_gte_i = 0u; u32 pe_gte_word = Psyz_GteDataRead(17 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word = Psyz_GteDataRead(17 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word = Psyz_GteDataRead(17 + pe_gte_i); memcpy(pe_gte_dst + pe_gte_i * 4, &pe_gte_word, 4); } } while (0)
 
 /* PSY-Q gte_SetColorMatrix: the five packed words of LR1..LB3. */
-#define gte_SetColorMatrix(r0) do { const u8 *pe_gte_src = (const u8 *)(r0); unsigned pe_gte_i; for (pe_gte_i = 0; pe_gte_i < 5; ++pe_gte_i) { u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(16 + pe_gte_i, pe_gte_word); } } while (0)
+#define gte_SetColorMatrix(r0) do { const u8 *pe_gte_src = (const u8 *)(r0); { const unsigned pe_gte_i = 0u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(16 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 1u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(16 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 2u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(16 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 3u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(16 + pe_gte_i, pe_gte_word); } { const unsigned pe_gte_i = 4u; u32 pe_gte_word; memcpy(&pe_gte_word, pe_gte_src + 0 + pe_gte_i * 4, 4); Psyz_GteCtrlWrite(16 + pe_gte_i, pe_gte_word); } } while (0)
 
 #endif

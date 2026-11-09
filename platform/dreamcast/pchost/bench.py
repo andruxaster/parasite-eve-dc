@@ -72,7 +72,7 @@ def layer(fn):
         return None  # the harness's own work
     if "dreamcast/dc_gpu.c" in fn:
         return "renderer"
-    if "libgte.c" in fn:
+    if "libgte.c" in fn or "gte_state.h" in fn:
         return "GTE"
     if re.search(r"psyz/(libgpu|prim|sys)\.c", fn):
         return "GPU queue"
