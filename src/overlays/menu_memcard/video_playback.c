@@ -189,7 +189,14 @@ void PeMovieProfile_Frame(void) {
     static const char *const names[PE_MOVIE_STAGES] = {
         "read", "vlc", "mdec", "sync", "input", "render+vsync"};
     uint64_t now = Psyz_OsNowUs();
-    if (!g_PeMovieProfile.start_us) g_PeMovieProfile.start_us = now;
+    /* a frame long after the last one starts a new movie: the window
+     * starts over, rather than counting the game in between */
+    if (!g_PeMovieProfile.start_us ||
+        now - g_PeMovieProfile.last_us > 1000000u) {
+        memset(&g_PeMovieProfile, 0, sizeof(g_PeMovieProfile));
+        g_PeMovieProfile.start_us = now;
+    }
+    g_PeMovieProfile.last_us = now;
     if (++g_PeMovieProfile.frames < 60) return;
     unsigned frames = g_PeMovieProfile.frames;
     unsigned wall = (unsigned)((now - g_PeMovieProfile.start_us) / frames);
@@ -204,6 +211,7 @@ void PeMovieProfile_Frame(void) {
     fflush(stdout);
     memset(&g_PeMovieProfile, 0, sizeof(g_PeMovieProfile));
     g_PeMovieProfile.start_us = now;
+    g_PeMovieProfile.last_us = now;
 }
 #endif
 

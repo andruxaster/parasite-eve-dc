@@ -21,6 +21,7 @@ uint64_t Psyz_OsNowUs(void);
 typedef struct {
     uint64_t us[PE_MOVIE_STAGES];
     uint64_t start_us;
+    uint64_t last_us; /* the previous movie frame */
     uint32_t frames;
 } PeMovieProfile;
 extern PeMovieProfile g_PeMovieProfile;
