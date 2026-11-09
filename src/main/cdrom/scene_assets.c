@@ -320,12 +320,37 @@ static uint32_t le32(const unsigned char *p) {
            (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
 }
 
-/* 128 KB, refilled from 32 KB before the request: a movie's video and
- * audio read the same stretch of the disc a few sectors apart, and on a real
- * drive every refill that goes back is a seek. */
+/* 128 KB that slides on by halves: a movie's video and audio read the same
+ * stretch of the disc a few sectors apart, and on a real drive every read
+ * that goes back is a seek. */
 #define PE_DISC_CACHE_BYTES (128 * 1024)
-#define PE_DISC_CACHE_BEHIND (32 * 1024)
 #define PE_DISC_READ_TRIES 8
+
+#if defined(_arch_dreamcast) && !defined(PE_DC_RELEASE)
+/* Drive reads of the image, logged every 64: a read that does not go on
+ * from where the previous one ended is a seek on a real drive (slow, and
+ * audible), which an emulator or an optical drive emulator hides. */
+static void note_drive_read(PeDisc *disc, uint64_t start, uint64_t length) {
+    static uint64_t last_end;
+    static unsigned reads, seeks, back;
+    static uint64_t bytes;
+    (void)disc;
+    if (start != last_end) {
+        seeks++;
+        back += start < last_end;
+    }
+    last_end = start + length;
+    bytes += length;
+    if (++reads == 64) {
+        fprintf(stderr, "disc: %u reads (%llu KB), %u seeks (%u back)\n", reads,
+                (unsigned long long)(bytes / 1024), seeks, back);
+        reads = seeks = back = 0;
+        bytes = 0;
+    }
+}
+#else
+#define note_drive_read(disc, start, length) ((void)0)
+#endif
 
 static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
     if (!disc->stream)
@@ -351,16 +376,34 @@ static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
         }
         if (size <= PE_DISC_CACHE_BYTES / 2 &&
             (disc->cache || (disc->cache = malloc(PE_DISC_CACHE_BYTES)))) {
-            if (offset < disc->cache_offset ||
-                offset + size > disc->cache_offset + disc->cache_length) {
-                /* Refill from the 2048-byte boundary below the request: whole
-                 * aligned blocks are what CD filesystems read fastest. */
+            uint64_t cache_end = disc->cache_offset + disc->cache_length;
+            if (disc->cache_length == PE_DISC_CACHE_BYTES && offset + size > cache_end &&
+                offset >= disc->cache_offset + PE_DISC_CACHE_BYTES / 2 &&
+                offset + size <= cache_end + PE_DISC_CACHE_BYTES / 2 &&
+                cache_end + PE_DISC_CACHE_BYTES / 2 <= disc->image_size) {
+                /* Past the end of the window: slide it on by reading the next half
+                 * where the drive is (no seek), keeping the last half for a
+                 * reader a little behind (a movie's video behind its audio). */
+                memmove(disc->cache, disc->cache + PE_DISC_CACHE_BYTES / 2,
+                        PE_DISC_CACHE_BYTES / 2);
+                disc->cache_length = PE_DISC_CACHE_BYTES / 2;
+                disc->cache_offset = cache_end - PE_DISC_CACHE_BYTES / 2;
+                note_drive_read(disc, cache_end, PE_DISC_CACHE_BYTES / 2);
+                if (pe_seek(disc->stream, (int64_t)cache_end, SEEK_SET) == 0 &&
+                    fread(disc->cache + PE_DISC_CACHE_BYTES / 2, 1,
+                          PE_DISC_CACHE_BYTES / 2, disc->stream) == PE_DISC_CACHE_BYTES / 2)
+                    disc->cache_length = PE_DISC_CACHE_BYTES;
+            } else if (offset < disc->cache_offset ||
+                       offset + size > cache_end) {
+                /* Anywhere else: a new window from the 2048-byte boundary
+                 * below the request (whole aligned blocks are what CD
+                 * filesystems read fastest). */
                 uint64_t start = offset & ~(uint64_t)2047;
-                start = start > PE_DISC_CACHE_BEHIND ? start - PE_DISC_CACHE_BEHIND : 0;
                 uint64_t length = disc->image_size - start;
                 if (length > PE_DISC_CACHE_BYTES)
                     length = PE_DISC_CACHE_BYTES;
                 disc->cache_length = 0;
+                note_drive_read(disc, start, length);
                 if (pe_seek(disc->stream, (int64_t)start, SEEK_SET) == 0 &&
                     fread(disc->cache, 1, (size_t)length, disc->stream) == length) {
                     disc->cache_offset = start;
@@ -372,6 +415,7 @@ static int read_image(PeDisc *disc, uint64_t offset, void *data, size_t size) {
             if (read_ok)
                 memcpy(data, disc->cache + (offset - disc->cache_offset), size);
         } else {
+            note_drive_read(disc, offset, size);
             read_ok=pe_seek(disc->stream,(int64_t)offset,SEEK_SET)==0 &&
                     fread(data,1,size,disc->stream)==size;
         }
