@@ -61,3 +61,26 @@ Start, Start, Cross, Cross at 23000-24800) is the one `tests/hd_hot_apply.py`
 uses to reach the first field scene. Holding Up from 26000 to 26900, then
 Cross every 600 with a short Up after each, plays on through the opera
 house, the fire and the first movie of Aya in the auditorium (about 50000).
+
+## Benchmark
+
+`bench.py` counts instructions scene by scene, to check that a speed-up helps
+the whole game and not one room:
+
+```sh
+python3 platform/dreamcast/pchost/bench.py OUT_DIR BENCH_DIR            # measure
+python3 platform/dreamcast/pchost/bench.py OUT_DIR NEW --ref OLD        # compare pictures
+python3 platform/dreamcast/pchost/bench.py OUT_DIR BENCH_DIR --reuse --top 15
+```
+
+It runs the harness under valgrind's callgrind (three runs in parallel: a new
+game to the auditorium, the corridor with the bodies, the memory card menu)
+and measures eleven windows of 300 vblanks: a movie, name entry, the street,
+the lobby, the stage, the auditorium, the dressing room corridor, a card
+dialog. `DCHOST_BENCH=name:from:to,...` makes the harness start and dump
+callgrind's counters at those vblanks. Each window is split by layer
+(renderer, GTE, GPU queue, game, libc, ...); the harness's software PVR and
+audio are left out. With `--ref` the frame at the end of each window is
+compared byte for byte with an earlier run's. Counts are x86 instructions:
+compare runs with each other, not with the Dreamcast. A full run takes about
+20 minutes.

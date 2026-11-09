@@ -49,8 +49,38 @@ uint64_t timer_ns_gettime64(void) { return ++vclock_us * 1000u; }
 static void (*vblank_hnd)(uint32_t, void *);
 int vblank_handler_add(void (*hnd)(uint32_t, void *), void *data) { (void)data; vblank_hnd = hnd; return 1; }
 void host_audio_vblank(void);
+
+/* DCHOST_BENCH="name:from:to,...": under valgrind --tool=callgrind
+ * --instr-atstart=no, count the instructions of each vblank window and dump
+ * them under its name (bench.py reads the dumps). */
+#ifdef __has_include
+#if __has_include(<valgrind/callgrind.h>)
+#include <valgrind/callgrind.h>
+#define HAVE_CALLGRIND 1
+#endif
+#endif
+static void BenchVblank(unsigned vb) {
+#ifdef HAVE_CALLGRIND
+    static const char *spec;
+    static int checked;
+    if (!checked) { checked = 1; spec = getenv("DCHOST_BENCH"); }
+    if (!spec) return;
+    for (const char *p = spec; *p;) {
+        char name[64]; unsigned from, to; int n = 0;
+        if (sscanf(p, "%63[^:]:%u:%u%n", name, &from, &to, &n) != 3) return;
+        if (vb == from) { CALLGRIND_ZERO_STATS; CALLGRIND_START_INSTRUMENTATION; }
+        if (vb == to) { CALLGRIND_DUMP_STATS_AT(name); CALLGRIND_STOP_INSTRUMENTATION; }
+        p += n;
+        while (*p == ',') p++;
+    }
+#else
+    (void)vb;
+#endif
+}
+
 void vid_waitvbl(void) {
     vclock_us = (vclock_us / 16683u + 1) * 16683u;
+    BenchVblank((unsigned)(vclock_us / 16683u));
     if (vblank_hnd) vblank_hnd(0, NULL);
     host_audio_vblank();
 }
