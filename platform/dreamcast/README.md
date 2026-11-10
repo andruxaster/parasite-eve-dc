@@ -62,4 +62,27 @@ right disc is read (a wrong one is ignored). Booting disc 2 asks for disc 1
 for the title screen the same way. Over dc-tool or SD both images are
 mounted from the start, so there is no prompt.
 
+### GD-ROM images (GDI)
+
+For an optical drive emulator (GDEMU, MODE, USB-GDROM) or an emulator,
+`make_gdi.py` builds a GDI of each disc. On a GD-ROM, `1ST_READ.BIN` is the
+**unscrambled** binary (objcopy's output, before `scramble`), and
+IP.BIN comes from KallistiOS's makeip:
+
+```sh
+sh-elf-objcopy -R .stack -O binary build-dc/parasite-eve.elf 1ST_READ.BIN
+$KOS_BASE/utils/makeip/makeip -f -g "PARASITE EVE" -c ANDRUXASTER \
+  -n T-PE001 -a U -i GD-ROM1/2 IP1.BIN    # and GD-ROM2/2 IP2.BIN
+python3 platform/dreamcast/make_gdi.py --disc 1 --boot 1ST_READ.BIN \
+  --ip IP1.BIN "Parasite Eve (USA) (Disc 1).bin" gdi-disc1
+```
+
+Each GDI has three tracks: a small file system with a note (track 1),
+silence (track 2) and the high-density area from LBA 45000 (track 3): IP.BIN
+in its first 16 sectors, then 1ST_READ.BIN and `PE1.BIN` (or `PE2.BIN`).
+Sectors are raw Mode 1 with EDC and ECC, like redump's GDIs, which needs
+numpy; `--iso` writes 2048-byte sectors without it. A disc takes 15-30 s.
+The two images (557,816 sectors together) do not fit on one GD-ROM
+(504,150 sectors from LBA 45000), so there is one GDI per disc, as on CD-R.
+
 Disc images are never part of this repository.

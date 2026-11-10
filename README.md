@@ -36,6 +36,11 @@ the lid, change the disc and close it. A wrong disc is ignored; the game goes
 on once the right one is read. Booting disc 2 asks for disc 1 for the title
 screen in the same way.
 
+For an optical drive emulator (GDEMU and the like), make a GDI of each disc
+instead with `platform/dreamcast/make_gdi.py`; it needs the unscrambled
+binary and an IP.BIN (see
+[platform/dreamcast/README.md](platform/dreamcast/README.md#gd-rom-images-gdi)).
+
 The images can also come from a dc-tool host folder (`/pc/pe1.bin`,
 `/pc/pe2.bin`) or an SD card adapter (`/sd/...`); then both are mounted
 from the start and there is no prompt. See
