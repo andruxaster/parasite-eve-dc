@@ -28,6 +28,17 @@ This build logs to the debug console: GPU statistics and the profiler
 add `-DPE_DC_RELEASE=ON` (in its own build directory): no KOS banner, no
 logs, no profiler.
 
+`prof_report.py` names the profile's functions, window by window, from a
+saved log and the ELF of the same build:
+
+```sh
+python3 platform/dreamcast/prof_report.py console.log build-dc/parasite-eve.elf \
+  --match "verts/frame" --top 15
+```
+
+The buckets are 128 bytes of code, so a bucket that starts in a small
+function before memcpy (`strnlen`, `L_odddst`) is memcpy's.
+
 ## Disc images
 
 Raw MODE2/2352 BIN images need no CUE sheet: the image type comes from its
