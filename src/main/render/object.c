@@ -1480,6 +1480,12 @@ typedef union RenderPacketAddress {
  * average depth; culled faces get a null link. Quads and triangles of both
  * packet classes are walked in turn through one shared descriptor cursor.
  * The room overlays carry a copy that keeps the negative winding instead. */
+#if defined(__sh__) && defined(_arch_dreamcast)
+/* With the GTE's hot functions in one 8 KB instruction-cache section
+ * (see PsyZ's psyz/hot.h): the model loop and what it calls do not evict
+ * each other. */
+__attribute__((section(".sub1.psyz_geom")))
+#endif
 void Render_DrawTexturedQuads(RenderObjectEntity *entity) {
     int i;
     s32 clip_area;
